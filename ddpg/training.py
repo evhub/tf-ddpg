@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0xab051126
+# __coconut_hash__ = 0x7c5b10e0
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -68,12 +68,10 @@ def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory
 
                 predicted_Q_values = critic.train(sess, obs_batch, act_batch, target_Q_batch)
 
-                best_acts = actor.predict(sess, obs_batch)
-                [Q_grads] = critic.get_Q_grads(sess, obs_batch, best_acts)
-                actor.train(sess, obs_batch, Q_grads)
+                actor.train(sess, obs_batch)
 
-                actor.update_target(sess)
                 critic.update_target(sess)
+                actor.update_target(sess)
 
             obs = next_obs
             episode_rewards.append(reward)
@@ -94,8 +92,8 @@ def train(env_id, num_episodes, batch_size, *args, **kwargs):
     [obs_dim] = env.observation_space.shape
     [act_dim] = env.action_space.shape
 
-    actor = Actor(obs_dim, act_dim, batch_size)
     critic = Critic(obs_dim, act_dim)
+    actor = Actor(obs_dim, act_dim, critic)
     noise = ornstein_uhlenbeck_noise(np.zeros(act_dim))
 
     return train_with(env, actor, critic, noise, num_episodes, batch_size, *args, **kwargs)

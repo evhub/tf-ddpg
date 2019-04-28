@@ -19,49 +19,6 @@ def get_critic_with_params(obs_input, act_input) =
     get_params_defined_in(get_critic$(obs_input, act_input))
 
 
-class Actor:
-    """A DDPG actor. Keeps track of both the current actor and the target actor."""
-
-    def __init__(self, obs_dim, act_dim, batch_size):
-        self.obs_input = batch_input(obs_dim)
-        self.params, self.actor = get_actor_with_params(self.obs_input, act_dim)
-        self.target_params, self.target_actor = get_actor_with_params(self.obs_input, act_dim)
-        self.target_updater = get_target_model_updater(self.target_params, self.params)
-        self.Q_grads_input = batch_input(act_dim)
-        self.optimizer = (
-            tf.gradients(self.actor, self.params, self.Q_grads_input)
-            # divide by batch_size since tf.gradients sums over the batch
-            #  and negate the gradient since we want this to be the
-            #  gradient of a loss
-            |> map$(x -> -x / batch_size)
-            |> zip$(?, self.params)
-            |> tf.train.AdamOptimizer().apply_gradients
-        )
-
-    def train(self, sess, obs_batch, Q_grads_batch) =
-        """Train the actor on the given batch of observations and Q gradients."""
-        run_sess_with_opt(sess, self.optimizer, [self.actor], feed_dict={
-            self.obs_input: obs_batch,
-            self.Q_grads_input: Q_grads_batch,
-        })
-
-    def predict(self, sess, obs_batch) =
-        """Get the predicted best actions for the given observations."""
-        sess.run(self.actor, feed_dict={
-            self.obs_input: obs_batch,
-        })
-
-    def target_predict(self, sess, obs_batch) =
-        """Same as predict but uses the target actor."""
-        sess.run(self.target_actor, feed_dict={
-            self.obs_input: obs_batch,
-        })
-
-    def update_target(self, sess):
-        """Update the target actor."""
-        sess.run(self.target_updater)
-
-
 class Critic:
     """A DDPG critic. Keeps track of both the current critic and the target critic."""
 
@@ -71,11 +28,12 @@ class Critic:
         self.params, self.critic = get_critic_with_params(self.obs_input, self.act_input)
         self.target_params, self.target_critic = get_critic_with_params(self.obs_input, self.act_input)
         self.target_updater = get_target_model_updater(self.target_params, self.params)
+
         self.target_Q_input = batch_input(1)
         self.optimizer = tf.train.AdamOptimizer().minimize(
-            tf.losses.mean_squared_error(self.target_Q_input, self.critic)
+            tf.losses.mean_squared_error(self.target_Q_input, self.critic),
+            var_list=self.params,
         )
-        self.Q_grads = tf.gradients(self.critic, self.act_input)
 
     def train(self, sess, obs_batch, act_batch, target_Q_batch) =
         """Train the critic on the given observation, action, and target Q value batches."""
@@ -99,13 +57,46 @@ class Critic:
             self.act_input: act_batch,
         })
 
-    def get_Q_grads(self, sess, obs_batch, act_batch) =
-        """Get the gradient of the critic with respect to the action over the given batch."""
-        sess.run(self.Q_grads, feed_dict={
-            self.obs_input: obs_batch,
-            self.act_input: act_batch,
-        })
-
     def update_target(self, sess):
         """Update the target critic."""
         sess.run(self.target_updater)
+
+
+class Actor:
+    """A DDPG actor. Keeps track of both the current actor and the target actor."""
+
+    def __init__(self, obs_dim, act_dim, critic):
+        self.obs_input = batch_input(obs_dim)
+        self.params, self.actor = get_actor_with_params(self.obs_input, act_dim)
+        self.target_params, self.target_actor = get_actor_with_params(self.obs_input, act_dim)
+        self.target_updater = get_target_model_updater(self.target_params, self.params)
+
+        self.critic_params, self.self_critic = get_critic_with_params(self.obs_input, self.actor)
+        self.critic_updater = get_target_model_updater(self.critic_params, critic.params, update_weight=1)
+        self.optimizer = tf.train.AdamOptimizer().minimize(
+            -self.self_critic,
+            var_list=self.params,
+        )
+
+    def train(self, sess, obs_batch) =
+        """Train the actor on the given batch of observations."""
+        run_sess_with_opt(sess, self.optimizer, [self.actor], feed_dict={
+            self.obs_input: obs_batch,
+        })
+
+    def predict(self, sess, obs_batch) =
+        """Get the predicted best actions for the given observations."""
+        sess.run(self.actor, feed_dict={
+            self.obs_input: obs_batch,
+        })
+
+    def target_predict(self, sess, obs_batch) =
+        """Same as predict but uses the target actor."""
+        sess.run(self.target_actor, feed_dict={
+            self.obs_input: obs_batch,
+        })
+
+    def update_target(self, sess):
+        """Update the target actor."""
+        sess.run(self.target_updater)
+        sess.run(self.critic_updater)
