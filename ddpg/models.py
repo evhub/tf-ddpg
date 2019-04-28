@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x86c2bb5d
+# __coconut_hash__ = 0xcb8c09e9
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -30,27 +30,23 @@ from ddpg.networks import get_actor
 from ddpg.networks import get_critic
 
 
-def build_actor(obs_dim, act_dim):
-    obs_input = batch_input(obs_dim)
-    actor_params, actor = get_params_defined_in(_coconut.functools.partial(get_actor, obs_input, act_dim))
-    return actor_params, [obs_input], actor
+def get_actor_with_params(obs_input, act_dim):
+    return get_params_defined_in(_coconut.functools.partial(get_actor, obs_input, act_dim))
 
 
-def build_critic(obs_dim, act_dim):
-    obs_input = batch_input(obs_dim)
-    act_input = batch_input(act_dim)
-    critic_params, critic = get_params_defined_in(_coconut.functools.partial(get_critic, obs_input, act_input))
-    return critic_params, (obs_input, act_input), critic
+def get_critic_with_params(obs_input, act_input):
+    return get_params_defined_in(_coconut.functools.partial(get_critic, obs_input, act_input))
 
 
 class Actor(_coconut.object):
 
     def __init__(self, obs_dim, act_dim, batch_size):
-        self.params, (self.obs_input,), self.actor = build_actor(obs_dim, act_dim)
-        self.target_params, (self.target_obs_input,), self.target_actor = build_actor(obs_dim, act_dim)
+        self.obs_input = batch_input(obs_dim)
+        self.params, self.actor = get_actor_with_params(self.obs_input, act_dim)
+        self.target_params, self.target_actor = get_actor_with_params(self.obs_input, act_dim)
         self.target_updater = get_target_model_updater(self.target_params, self.params)
         self.act_grads_input = batch_input(act_dim)
-        self.optimizer = ((tf.train.AdamOptimizer().apply_gradients)((_coconut_partial(zip, {1: self.params}, 2))(map(lambda x: x / batch_size, tf.gradients(self.actor, self.params, -self.act_grads_input)))))
+        self.optimizer = ((tf.train.AdamOptimizer().apply_gradients)((_coconut_partial(zip, {1: self.params}, 2))(map(lambda x: -x / batch_size, tf.gradients(self.actor, self.params, self.act_grads_input)))))
 
     def train(self, sess, obs_batch, act_grads_batch):
         return run_sess_with_opt(sess, self.optimizer, [self.actor], feed_dict={self.obs_input: obs_batch, self.act_grads_input: act_grads_batch})
@@ -59,7 +55,7 @@ class Actor(_coconut.object):
         return sess.run(self.actor, feed_dict={self.obs_input: obs_batch})
 
     def target_predict(self, sess, obs_batch):
-        return sess.run(self.target_actor, feed_dict={self.target_obs_input: obs_batch})
+        return sess.run(self.target_actor, feed_dict={self.obs_input: obs_batch})
 
     def update_target(self, sess):
         sess.run(self.target_updater)
@@ -68,8 +64,10 @@ class Actor(_coconut.object):
 class Critic(_coconut.object):
 
     def __init__(self, obs_dim, act_dim):
-        self.params, (self.obs_input, self.act_input), self.critic = build_critic(obs_dim, act_dim)
-        self.target_params, (self.target_obs_input, self.target_act_input), self.target_critic = build_critic(obs_dim, act_dim)
+        self.obs_input = batch_input(obs_dim)
+        self.act_input = batch_input(act_dim)
+        self.params, self.critic = get_critic_with_params(self.obs_input, self.act_input)
+        self.target_params, self.target_critic = get_critic_with_params(self.obs_input, self.act_input)
         self.target_updater = get_target_model_updater(self.target_params, self.params)
         self.target_Q_input = batch_input(1)
         self.optimizer = tf.train.AdamOptimizer().minimize(tf.losses.mean_squared_error(self.target_Q_input, self.critic))
@@ -82,7 +80,7 @@ class Critic(_coconut.object):
         return sess.run(self.critic, feed_dict={self.obs_input: obs_batch, self.act_input: act_batch})
 
     def target_predict(self, sess, obs_batch, act_batch):
-        return sess.run(self.target_critic, feed_dict={self.target_obs_input: obs_batch, self.target_act_input: act_batch})
+        return sess.run(self.target_critic, feed_dict={self.obs_input: obs_batch, self.act_input: act_batch})
 
     def get_act_grads(self, sess, obs_batch, act_batch):
         return sess.run(self.act_grads, feed_dict={self.obs_input: obs_batch, self.act_input: act_batch})

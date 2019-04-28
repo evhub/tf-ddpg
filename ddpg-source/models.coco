@@ -9,29 +9,28 @@ from ddpg.util import (
 from ddpg.networks import get_actor, get_critic
 
 
-def build_actor(obs_dim, act_dim):
-    obs_input = batch_input(obs_dim)
-    actor_params, actor = get_params_defined_in(get_actor$(obs_input, act_dim))
-    return actor_params, [obs_input], actor
+def get_actor_with_params(obs_input, act_dim) =
+    get_params_defined_in(get_actor$(obs_input, act_dim))
 
 
-def build_critic(obs_dim, act_dim):
-    obs_input = batch_input(obs_dim)
-    act_input = batch_input(act_dim)
-    critic_params, critic = get_params_defined_in(get_critic$(obs_input, act_input))
-    return critic_params, (obs_input, act_input), critic
+def get_critic_with_params(obs_input, act_input) =
+    get_params_defined_in(get_critic$(obs_input, act_input))
 
 
 class Actor:
 
     def __init__(self, obs_dim, act_dim, batch_size):
-        self.params, (self.obs_input,), self.actor = build_actor(obs_dim, act_dim)
-        self.target_params, (self.target_obs_input,), self.target_actor = build_actor(obs_dim, act_dim)
+        self.obs_input = batch_input(obs_dim)
+        self.params, self.actor = get_actor_with_params(self.obs_input, act_dim)
+        self.target_params, self.target_actor = get_actor_with_params(self.obs_input, act_dim)
         self.target_updater = get_target_model_updater(self.target_params, self.params)
         self.act_grads_input = batch_input(act_dim)
         self.optimizer = (
-            tf.gradients(self.actor, self.params, -self.act_grads_input)
-            |> map$(x -> x / batch_size)
+            tf.gradients(self.actor, self.params, self.act_grads_input)
+            # divide by batch_size since tf.gradients sums over the batch
+            #  and negate the gradient since we want this to be the
+            #  gradient of a loss
+            |> map$(x -> -x / batch_size)
             |> zip$(?, self.params)
             |> tf.train.AdamOptimizer().apply_gradients
         )
@@ -49,7 +48,7 @@ class Actor:
 
     def target_predict(self, sess, obs_batch) =
         sess.run(self.target_actor, feed_dict={
-            self.target_obs_input: obs_batch,
+            self.obs_input: obs_batch,
         })
 
     def update_target(self, sess):
@@ -59,8 +58,10 @@ class Actor:
 class Critic:
 
     def __init__(self, obs_dim, act_dim):
-        self.params, (self.obs_input, self.act_input), self.critic = build_critic(obs_dim, act_dim)
-        self.target_params, (self.target_obs_input, self.target_act_input), self.target_critic = build_critic(obs_dim, act_dim)
+        self.obs_input = batch_input(obs_dim)
+        self.act_input = batch_input(act_dim)
+        self.params, self.critic = get_critic_with_params(self.obs_input, self.act_input)
+        self.target_params, self.target_critic = get_critic_with_params(self.obs_input, self.act_input)
         self.target_updater = get_target_model_updater(self.target_params, self.params)
         self.target_Q_input = batch_input(1)
         self.optimizer = tf.train.AdamOptimizer().minimize(
@@ -83,8 +84,8 @@ class Critic:
 
     def target_predict(self, sess, obs_batch, act_batch) =
         sess.run(self.target_critic, feed_dict={
-            self.target_obs_input: obs_batch,
-            self.target_act_input: act_batch,
+            self.obs_input: obs_batch,
+            self.act_input: act_batch,
         })
 
     def get_act_grads(self, sess, obs_batch, act_batch) =
