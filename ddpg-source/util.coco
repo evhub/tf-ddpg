@@ -1,0 +1,20 @@
+import numpy as np
+import tensorflow as tf
+
+
+def batch_input(input_dim) =
+    tf.placeholder(tf.float32, [None, input_dim], name="input")
+
+
+def optimize_one_step(sess, opt, outputs=[], feed_dict={}):
+    [_] + results = sess.run([opt] + outputs, feed_dict=feed_dict)
+    return results
+
+
+def run(main_func):
+    sess = tf.Session()
+    try:
+        sess.run(tf.global_variables_initializer())
+        return main_func(sess)
+    finally:
+        sess.close()
