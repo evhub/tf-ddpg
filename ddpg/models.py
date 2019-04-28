@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0xc6f88bc2
+# __coconut_hash__ = 0xcbac3dd6
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -44,12 +44,14 @@ class Critic(_coconut.object):
     """A DDPG critic. Keeps track of both the current critic and the target critic."""
 
     def __init__(self, obs_dim, act_dim):
+# build critic model
         self.obs_input = batch_input(obs_dim)
         self.act_input = batch_input(act_dim)
         self.params, self.critic = get_critic_with_params(self.obs_input, self.act_input)
         self.target_params, self.target_critic = get_critic_with_params(self.obs_input, self.act_input)
         self.target_updater = get_target_model_updater(self.target_params, self.params)
 
+# construct MSE loss
         self.target_Q_input = batch_input(1)
         self.optimizer = tf.train.AdamOptimizer().minimize(tf.losses.mean_squared_error(self.target_Q_input, self.critic), var_list=self.params)
 
@@ -74,11 +76,13 @@ class Actor(_coconut.object):
     """A DDPG actor. Keeps track of both the current actor and the target actor."""
 
     def __init__(self, obs_dim, act_dim, critic):
+# build actor model
         self.obs_input = batch_input(obs_dim)
         self.params, self.actor = get_actor_with_params(self.obs_input, act_dim)
         self.target_params, self.target_actor = get_actor_with_params(self.obs_input, act_dim)
         self.target_updater = get_target_model_updater(self.target_params, self.params)
 
+# use critic to construct loss
         self.critic_params, self.self_critic = get_critic_with_params(self.obs_input, self.actor)
         self.critic_updater = get_target_model_updater(self.critic_params, critic.params, update_weight=1)
         self.optimizer = tf.train.AdamOptimizer().minimize(-self.self_critic, var_list=self.params)

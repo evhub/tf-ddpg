@@ -8,7 +8,9 @@ def proc_obs(obs_input) =
     (
         obs_input
         |> dense_with_batch_norm(512, "relu")
+        |> layers.Dropout(0.1)
         |> dense_with_batch_norm(512, "relu")
+        |> layers.Dropout(0.1)
     )
 
 
@@ -17,7 +19,9 @@ def proc_obs_and_act(obs_input, act_input) =
     (
         layers.Concatenate()([act_input, proc_obs(obs_input)])
         |> dense_with_batch_norm(512, "relu")
+        |> layers.Dropout(0.1)
         |> dense_with_batch_norm(512, "relu")
+        |> layers.Dropout(0.1)
     )
 
 
