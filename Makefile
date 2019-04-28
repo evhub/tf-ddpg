@@ -6,6 +6,10 @@ install: build
 build:
 	coconut ddpg-source ddpg --no-tco --strict --jobs sys
 
+.PHONY: run
+run: build
+	python ./ddpg/training.py
+
 .PHONY: clean
 clean:
 	rm -rf ./ddpg

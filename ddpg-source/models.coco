@@ -1,0 +1,97 @@
+import tensorflow as tf
+
+from ddpg.util import (
+    batch_input,
+    get_params_defined_in,
+    get_target_model_updater,
+    run_sess_with_opt,
+)
+from ddpg.networks import get_actor, get_critic
+
+
+def build_actor(obs_dim, act_dim):
+    obs_input = batch_input(obs_dim)
+    actor_params, actor = get_params_defined_in(get_actor$(obs_input, act_dim))
+    return actor_params, [obs_input], actor
+
+
+def build_critic(obs_dim, act_dim):
+    obs_input = batch_input(obs_dim)
+    act_input = batch_input(act_dim)
+    critic_params, critic = get_params_defined_in(get_critic$(obs_input, act_input))
+    return critic_params, (obs_input, act_input), critic
+
+
+class Actor:
+
+    def __init__(self, obs_dim, act_dim, batch_size):
+        self.params, (self.obs_input,), self.actor = build_actor(obs_dim, act_dim)
+        self.target_params, (self.target_obs_input,), self.target_actor = build_actor(obs_dim, act_dim)
+        self.target_updater = get_target_model_updater(self.target_params, self.params)
+        self.act_grads_input = batch_input(act_dim)
+        self.optimizer = (
+            tf.gradients(self.actor, self.params, -self.act_grads_input)
+            |> map$(x -> x / batch_size)
+            |> zip$(?, self.params)
+            |> tf.train.AdamOptimizer().apply_gradients
+        )
+
+    def train(self, sess, obs_batch, act_grads_batch) =
+        run_sess_with_opt(sess, self.optimizer, [self.actor], feed_dict={
+            self.obs_input: obs_batch,
+            self.act_grads_input: act_grads_batch,
+        })
+
+    def predict(self, sess, obs_batch) =
+        sess.run(self.actor, feed_dict={
+            self.obs_input: obs_batch,
+        })
+
+    def target_predict(self, sess, obs_batch) =
+        sess.run(self.target_actor, feed_dict={
+            self.target_obs_input: obs_batch,
+        })
+
+    def update_target(self, sess):
+        sess.run(self.target_updater)
+
+
+class Critic:
+
+    def __init__(self, obs_dim, act_dim):
+        self.params, (self.obs_input, self.act_input), self.critic = build_critic(obs_dim, act_dim)
+        self.target_params, (self.target_obs_input, self.target_act_input), self.target_critic = build_critic(obs_dim, act_dim)
+        self.target_updater = get_target_model_updater(self.target_params, self.params)
+        self.target_Q_input = batch_input(1)
+        self.optimizer = tf.train.AdamOptimizer().minimize(
+            tf.losses.mean_squared_error(self.target_Q_input, self.critic)
+        )
+        self.act_grads = tf.gradients(self.critic, self.act_input)
+
+    def train(self, sess, obs_batch, act_batch, target_Q_batch) =
+        run_sess_with_opt(sess, self.optimizer, [self.critic], feed_dict={
+            self.obs_input: obs_batch,
+            self.act_input: act_batch,
+            self.target_Q_input: target_Q_batch,
+        })
+
+    def predict(self, sess, obs_batch, act_batch) =
+        sess.run(self.critic, feed_dict={
+            self.obs_input: obs_batch,
+            self.act_input: act_batch,
+        })
+
+    def target_predict(self, sess, obs_batch, act_batch) =
+        sess.run(self.target_critic, feed_dict={
+            self.target_obs_input: obs_batch,
+            self.target_act_input: act_batch,
+        })
+
+    def get_act_grads(self, sess, obs_batch, act_batch) =
+        sess.run(self.act_grads, feed_dict={
+            self.obs_input: obs_batch,
+            self.act_input: act_batch,
+        })
+
+    def update_target(self, sess):
+        sess.run(self.target_updater)

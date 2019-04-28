@@ -6,8 +6,11 @@ setuptools.setup(
     version=0.1,
     author="Evan Hubinger",
     install_requires=[
-        "coconut",
+        "coconut-develop",
         "tensorflow-gpu",
+        "numpy",
+        "gym",
+        "tqdm",
     ],
     packages=setuptools.find_packages(),
 )
