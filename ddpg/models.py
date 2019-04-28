@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0xcb8c09e9
+# __coconut_hash__ = 0x14e6354c
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -31,37 +31,45 @@ from ddpg.networks import get_critic
 
 
 def get_actor_with_params(obs_input, act_dim):
+    """Return (actor_params, actor_model)."""
     return get_params_defined_in(_coconut.functools.partial(get_actor, obs_input, act_dim))
 
 
 def get_critic_with_params(obs_input, act_input):
+    """Return (critic_params, critic_model)."""
     return get_params_defined_in(_coconut.functools.partial(get_critic, obs_input, act_input))
 
 
 class Actor(_coconut.object):
+    """A DDPG actor. Keeps track of both the current actor and the target actor."""
 
     def __init__(self, obs_dim, act_dim, batch_size):
         self.obs_input = batch_input(obs_dim)
         self.params, self.actor = get_actor_with_params(self.obs_input, act_dim)
         self.target_params, self.target_actor = get_actor_with_params(self.obs_input, act_dim)
         self.target_updater = get_target_model_updater(self.target_params, self.params)
-        self.act_grads_input = batch_input(act_dim)
-        self.optimizer = ((tf.train.AdamOptimizer().apply_gradients)((_coconut_partial(zip, {1: self.params}, 2))(map(lambda x: -x / batch_size, tf.gradients(self.actor, self.params, self.act_grads_input)))))
+        self.Q_grads_input = batch_input(act_dim)
+        self.optimizer = ((tf.train.AdamOptimizer().apply_gradients)((_coconut_partial(zip, {1: self.params}, 2))(map(lambda x: -x / batch_size, tf.gradients(self.actor, self.params, self.Q_grads_input)))))
 
-    def train(self, sess, obs_batch, act_grads_batch):
-        return run_sess_with_opt(sess, self.optimizer, [self.actor], feed_dict={self.obs_input: obs_batch, self.act_grads_input: act_grads_batch})
+    def train(self, sess, obs_batch, Q_grads_batch):
+        """Train the actor on the given batch of observations and Q gradients."""
+        return run_sess_with_opt(sess, self.optimizer, [self.actor], feed_dict={self.obs_input: obs_batch, self.Q_grads_input: Q_grads_batch})
 
     def predict(self, sess, obs_batch):
+        """Get the predicted best actions for the given observations."""
         return sess.run(self.actor, feed_dict={self.obs_input: obs_batch})
 
     def target_predict(self, sess, obs_batch):
+        """Same as predict but uses the target actor."""
         return sess.run(self.target_actor, feed_dict={self.obs_input: obs_batch})
 
     def update_target(self, sess):
+        """Update the target actor."""
         sess.run(self.target_updater)
 
 
 class Critic(_coconut.object):
+    """A DDPG critic. Keeps track of both the current critic and the target critic."""
 
     def __init__(self, obs_dim, act_dim):
         self.obs_input = batch_input(obs_dim)
@@ -71,19 +79,24 @@ class Critic(_coconut.object):
         self.target_updater = get_target_model_updater(self.target_params, self.params)
         self.target_Q_input = batch_input(1)
         self.optimizer = tf.train.AdamOptimizer().minimize(tf.losses.mean_squared_error(self.target_Q_input, self.critic))
-        self.act_grads = tf.gradients(self.critic, self.act_input)
+        self.Q_grads = tf.gradients(self.critic, self.act_input)
 
     def train(self, sess, obs_batch, act_batch, target_Q_batch):
+        """Train the critic on the given observation, action, and target Q value batches."""
         return run_sess_with_opt(sess, self.optimizer, [self.critic], feed_dict={self.obs_input: obs_batch, self.act_input: act_batch, self.target_Q_input: target_Q_batch})
 
     def predict(self, sess, obs_batch, act_batch):
+        """Get the predicted Q value for the given observation and action batches."""
         return sess.run(self.critic, feed_dict={self.obs_input: obs_batch, self.act_input: act_batch})
 
     def target_predict(self, sess, obs_batch, act_batch):
+        """Same as predict but uses the target critic."""
         return sess.run(self.target_critic, feed_dict={self.obs_input: obs_batch, self.act_input: act_batch})
 
-    def get_act_grads(self, sess, obs_batch, act_batch):
-        return sess.run(self.act_grads, feed_dict={self.obs_input: obs_batch, self.act_input: act_batch})
+    def get_Q_grads(self, sess, obs_batch, act_batch):
+        """Get the gradient of the critic with respect to the action over the given batch."""
+        return sess.run(self.Q_grads, feed_dict={self.obs_input: obs_batch, self.act_input: act_batch})
 
     def update_target(self, sess):
+        """Update the target critic."""
         sess.run(self.target_updater)

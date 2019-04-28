@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x5bd7414a
+# __coconut_hash__ = 0x358d4506
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -25,24 +25,27 @@ from collections import deque
 
 
 class ReplayMemory(_coconut.object):
+    """A buffer for storing (obs, action, reward, done, next_obs) tuples."""
 
     def __init__(self, memory_size):
         self.memory_size = memory_size
         self.memory = deque()
 
-    def add(self, obs, act, r, done, next_obs):
-        self.memory.append((obs, act, r, done, next_obs))
+    def add(self, obs, action, reward, done, next_obs):
+        """Add a new observation to the replay memory."""
+        self.memory.append((obs, action, reward, done, next_obs))
         while len(self.memory) > self.memory_size:
             self.memory.popleft()
 
     def sample(self, batch_size):
+        """Sample obs_batch, action_batch, reward_batch, done_batch, next_obs_batch from the replay memory."""
         sampled_inds = random.sample(range(len(self.memory)), min(len(self.memory), batch_size))
 
 # only iterate through the deque once
         batch = []
-        for i, (obs, act, r, done, next_obs) in enumerate(self.memory):
+        for i, (obs, action, reward, done, next_obs) in enumerate(self.memory):
             if i in sampled_inds:
-                batch.append((obs, act, r, done, next_obs))
+                batch.append((obs, action, reward, done, next_obs))
 
         return zip(*batch)
 

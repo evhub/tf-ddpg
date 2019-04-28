@@ -3,28 +3,36 @@ from tensorflow.keras import layers
 from ddpg.util import dense_with_batch_norm
 
 
-def proc_obs(obs_input) = (
-    obs_input
-    |> dense_with_batch_norm(512, "relu")
-    |> dense_with_batch_norm(512, "relu")
-)
+def proc_obs(obs_input) =
+    """Generate a model that processes an observation."""
+    (
+        obs_input
+        |> dense_with_batch_norm(512, "relu")
+        |> dense_with_batch_norm(512, "relu")
+    )
 
 
-def proc_obs_and_act(obs_input, act_input) = (
-    layers.Concatenate()([act_input, proc_obs(obs_input)])
-    |> dense_with_batch_norm(512, "relu")
-    |> dense_with_batch_norm(512, "relu")
-)
+def proc_obs_and_act(obs_input, act_input) =
+    """Generate a model that processes an observation and an action."""
+    (
+        layers.Concatenate()([act_input, proc_obs(obs_input)])
+        |> dense_with_batch_norm(512, "relu")
+        |> dense_with_batch_norm(512, "relu")
+    )
 
 
-def get_actor(obs_input, act_dim) = (
-    obs_input
-    |> proc_obs
-    |> layers.Dense(act_dim, activation="tanh")
-)
+def get_actor(obs_input, act_dim) =
+    """Generate a DDPG actor model."""
+    (
+        obs_input
+        |> proc_obs
+        |> layers.Dense(act_dim, activation="tanh")
+    )
 
 
-def get_critic(obs_input, act_input) = (
-    proc_obs_and_act(obs_input, act_input)
-    |> layers.Dense(1, activation=None)
-)
+def get_critic(obs_input, act_input) =
+    """Generate a DDPG critic model."""
+    (
+        proc_obs_and_act(obs_input, act_input)
+        |> layers.Dense(1, activation=None)
+    )

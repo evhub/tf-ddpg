@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x379bee7e
+# __coconut_hash__ = 0x1f313196
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -20,20 +20,25 @@ if _coconut_sys.version_info >= (3,):
 
 # Compiled Coconut: -----------------------------------------------------------
 
+import functools
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
 
 def dense_with_batch_norm(num_neurons, activation):
+    """Behaves as layers.Dense but includes BatchNormalization."""
     return lambda prev_layer: ((layers.Activation(activation))((layers.BatchNormalization())((layers.Dense(num_neurons, activation=None))(prev_layer))))
 
 
 def batch_input(input_dim):
+    """Create a tensor for a batch of 1D inputs of the given length."""
     return tf.placeholder(tf.float32, [None, input_dim], name="batch_input_{_coconut_format_0}".format(_coconut_format_0=(input_dim)))
 
 
 def get_params_defined_in(param_def_func):
+    """Gets all the trainable variables defined in the given function."""
     num_old_params = len(tf.trainable_variables())
     result = param_def_func()
     new_params = tf.trainable_variables()[num_old_params:]
@@ -41,10 +46,12 @@ def get_params_defined_in(param_def_func):
 
 
 def get_target_model_updater(target_params, base_params, update_weight=0.001):
+    """Gets an optimizer that can be used to soft update target_params with base_params."""
     return [target_param.assign((1 - update_weight) * target_param + update_weight * base_param) for target_param, base_param in zip(target_params, base_params)]
 
 
 def ornstein_uhlenbeck_noise(mu, sigma=0.3, theta=0.15, dt=0.01):
+    """Produces an iterator that outputs Ornstein-Uhlenbeck random noise."""
     x = np.zeros_like(mu)
     while True:
         x += theta * (mu - x) * dt + sigma * np.sqrt(dt) * np.random.randn(*mu.shape)
@@ -52,6 +59,7 @@ def ornstein_uhlenbeck_noise(mu, sigma=0.3, theta=0.15, dt=0.01):
 
 
 def run_sess_with_opt(sess, opt, outputs=[], feed_dict={}):
+    """Run a session including the given optimizer but excluding its output."""
     _coconut_match_to = sess.run([opt] + outputs, feed_dict=feed_dict)
     _coconut_match_check = False
     if (_coconut.isinstance(_coconut_match_to, _coconut.abc.Sequence)) and (_coconut.len(_coconut_match_to) >= 1):
@@ -68,6 +76,8 @@ def run_sess_with_opt(sess, opt, outputs=[], feed_dict={}):
 
 
 def run_with_sess(base_func):
+    """Wrap base_func by providing a sess and automatically initializing global variables."""
+    @functools.wraps(base_func)
     def sess_func(*args, **kwargs):
         sess = tf.Session()
         try:

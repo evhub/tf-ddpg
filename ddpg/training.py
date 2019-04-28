@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x7c519285
+# __coconut_hash__ = 0xab051126
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -34,6 +34,7 @@ from ddpg.util import ornstein_uhlenbeck_noise
 
 @run_with_sess
 def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory_size=100000, gamma=0.99, debug=False):
+    """Train on an existing environment, actor, critic, and noise."""
     [obs_dim] = env.observation_space.shape
     [act_dim] = env.action_space.shape
 
@@ -68,8 +69,8 @@ def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory
                 predicted_Q_values = critic.train(sess, obs_batch, act_batch, target_Q_batch)
 
                 best_acts = actor.predict(sess, obs_batch)
-                [act_grads] = critic.get_act_grads(sess, obs_batch, best_acts)
-                actor.train(sess, obs_batch, act_grads)
+                [Q_grads] = critic.get_Q_grads(sess, obs_batch, best_acts)
+                actor.train(sess, obs_batch, Q_grads)
 
                 actor.update_target(sess)
                 critic.update_target(sess)
@@ -87,6 +88,7 @@ def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory
 
 
 def train(env_id, num_episodes, batch_size, *args, **kwargs):
+    """Train a DDPG model on the given environment."""
     env = gym.make(env_id)
 
     [obs_dim] = env.observation_space.shape

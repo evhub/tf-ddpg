@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x85cb6ff1
+# __coconut_hash__ = 0x35e91655
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -26,16 +26,20 @@ from ddpg.util import dense_with_batch_norm
 
 
 def proc_obs(obs_input):
+    """Generate a model that processes an observation."""
     return ((dense_with_batch_norm(512, "relu"))((dense_with_batch_norm(512, "relu"))(obs_input)))
 
 
 def proc_obs_and_act(obs_input, act_input):
+    """Generate a model that processes an observation and an action."""
     return ((dense_with_batch_norm(512, "relu"))((dense_with_batch_norm(512, "relu"))(layers.Concatenate()([act_input, proc_obs(obs_input)]))))
 
 
 def get_actor(obs_input, act_dim):
+    """Generate a DDPG actor model."""
     return ((layers.Dense(act_dim, activation="tanh"))((proc_obs)(obs_input)))
 
 
 def get_critic(obs_input, act_input):
+    """Generate a DDPG critic model."""
     return ((layers.Dense(1, activation=None))(proc_obs_and_act(obs_input, act_input)))
