@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x70b5dfe1
+# __coconut_hash__ = 0x7c519285
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -33,7 +33,7 @@ from ddpg.util import ornstein_uhlenbeck_noise
 
 
 @run_with_sess
-def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory_size=100000, gamma=0.99):
+def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory_size=100000, gamma=0.99, debug=False):
     [obs_dim] = env.observation_space.shape
     [act_dim] = env.action_space.shape
 
@@ -42,8 +42,8 @@ def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory
 
     memory = ReplayMemory(memory_size)
 
-    for i in tqdm(range(num_episodes)):
-
+    for episode_num in tqdm(range(num_episodes)):
+        episode_rewards = []
         obs = env.reset()
         done = False
         while not done:
@@ -54,6 +54,9 @@ def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory
             memory.add(obs, action, reward, done, next_obs)
 
             if len(memory) >= batch_size:
+                if debug and len(memory) == batch_size:
+                    print("\nFinished accumulating memory, starting training.")
+
                 obs_batch, act_batch, r_batch, done_batch, next_obs_batch = memory.sample(batch_size)
 
                 best_next_act_batch = actor.target_predict(sess, next_obs_batch)
@@ -72,6 +75,13 @@ def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory
                 critic.update_target(sess)
 
             obs = next_obs
+            episode_rewards.append(reward)
+
+        if debug:
+            sum_disc_r = 0
+            for i, r in enumerate(episode_rewards):
+                sum_disc_r += gamma**i * r
+            print("\nR_{_coconut_format_0} = {_coconut_format_1} (over {_coconut_format_2} steps)".format(_coconut_format_0=(episode_num), _coconut_format_1=(sum_disc_r), _coconut_format_2=(len(episode_rewards))))
 
     return actor, critic, memory
 
@@ -90,4 +100,4 @@ def train(env_id, num_episodes, batch_size, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    train("Pendulum-v0", 100, 16)
+    train("Pendulum-v0", num_episodes=100, batch_size=16, debug=True)
