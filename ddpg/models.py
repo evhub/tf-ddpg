@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0xcbac3dd6
+# __coconut_hash__ = 0x62d939c3
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -100,6 +100,6 @@ class Actor(_coconut.object):
         return sess.run(self.target_actor, feed_dict={self.obs_input: obs_batch})
 
     def update_target(self, sess):
-        """Update the target actor."""
+        """Update the target actor and self critic."""
         sess.run(self.target_updater)
         sess.run(self.critic_updater)

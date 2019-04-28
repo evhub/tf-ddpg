@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x7c5b10e0
+# __coconut_hash__ = 0xb6aff5f7
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -22,7 +22,6 @@ if _coconut_sys.version_info >= (3,):
 
 import gym
 import numpy as np
-import tensorflow as tf
 from tqdm import tqdm
 
 from ddpg.models import Actor
@@ -45,14 +44,16 @@ def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory
 
     for episode_num in tqdm(range(num_episodes)):
         episode_rewards = []
+
         obs = env.reset()
+
         done = False
         while not done:
 
             [action] = actor.predict(sess, np.asarray([obs])) + next(noise)
             next_obs, reward, done, info = env.step(action)
 
-            memory.add(obs, action, reward, done, next_obs)
+            memory.add(obs, action, reward, done)
 
             if len(memory) >= batch_size:
                 if debug and len(memory) == batch_size:

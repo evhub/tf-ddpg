@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0xfd2dc889
+# __coconut_hash__ = 0xe9df474b
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -27,17 +27,17 @@ from ddpg.util import dense_with_batch_norm
 
 def proc_obs(obs_input):
     """Generate a model that processes an observation."""
-    return ((layers.Dropout(0.1))((dense_with_batch_norm(512, "relu"))((layers.Dropout(0.1))((dense_with_batch_norm(512, "relu"))(obs_input)))))
+    return ((layers.Dropout(0.1))((dense_with_batch_norm(128, "relu"))((layers.Dropout(0.1))((dense_with_batch_norm(128, "relu"))(obs_input)))))
 
 
 def proc_obs_and_act(obs_input, act_input):
     """Generate a model that processes an observation and an action."""
-    return ((layers.Dropout(0.1))((dense_with_batch_norm(512, "relu"))((layers.Dropout(0.1))((dense_with_batch_norm(512, "relu"))(layers.Concatenate()([act_input, proc_obs(obs_input)]))))))
+    return ((layers.Dropout(0.1))((dense_with_batch_norm(128, "relu"))((layers.Dropout(0.1))((dense_with_batch_norm(128, "relu"))(layers.Concatenate()([act_input, proc_obs(obs_input)]))))))
 
 
-def get_actor(obs_input, act_dim):
+def get_actor(obs_input, act_dim, act_scale=2):
     """Generate a DDPG actor model."""
-    return ((layers.Dense(act_dim, activation="tanh"))((proc_obs)(obs_input)))
+    return ((layers.Lambda(lambda x: x * act_scale))((layers.Dense(act_dim, activation="tanh"))((proc_obs)(obs_input))))
 
 
 def get_critic(obs_input, act_input):

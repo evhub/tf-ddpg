@@ -1,6 +1,5 @@
 import gym
 import numpy as np
-import tensorflow as tf
 from tqdm import tqdm
 
 from ddpg.models import Actor, Critic
@@ -21,14 +20,16 @@ def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory
 
     for episode_num in tqdm(range(num_episodes)):
         episode_rewards = []
+
         obs = env.reset()
+
         done = False
         while not done:
 
             [action] = actor.predict(sess, np.asarray([obs])) + next(noise)
             next_obs, reward, done, info = env.step(action)
 
-            memory.add(obs, action, reward, done, next_obs)
+            memory.add(obs, action, reward, done)
 
             if len(memory) >= batch_size:
                 if debug and len(memory) == batch_size:

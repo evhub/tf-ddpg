@@ -101,6 +101,6 @@ class Actor:
         })
 
     def update_target(self, sess):
-        """Update the target actor."""
+        """Update the target actor and self critic."""
         sess.run(self.target_updater)
         sess.run(self.critic_updater)
