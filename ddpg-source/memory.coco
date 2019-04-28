@@ -23,10 +23,7 @@ class ReplayMemory:
 
     def sample(self, batch_size):
         """Sample obs_batch, action_batch, reward_batch, done_batch, next_obs_batch from the replay memory."""
-        sampled_inds = random.sample(
-            range(len(self)),
-            min(len(self), batch_size),
-        )
+        sampled_inds = random.sample(range(len(self)), batch_size)
 
         # only iterate through the deque once, going in reverse order
         #  so we can keep track of next_obs

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x58432997
+# __coconut_hash__ = 0x1b4674ea
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -45,7 +45,7 @@ class ReplayMemory(_coconut.object):
 
     def sample(self, batch_size):
         """Sample obs_batch, action_batch, reward_batch, done_batch, next_obs_batch from the replay memory."""
-        sampled_inds = random.sample(range(len(self)), min(len(self), batch_size))
+        sampled_inds = random.sample(range(len(self)), batch_size)
 
 # only iterate through the deque once, going in reverse order
 #  so we can keep track of next_obs
