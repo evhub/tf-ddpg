@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x1b4674ea
+# __coconut_hash__ = 0x527c536d
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -41,7 +41,7 @@ class ReplayMemory(_coconut.object):
 
     def __len__(self):
 # ignore the last elem if not done as it might not have a next_obs
-        return len(self.memory) if self.memory[-1][-1] else max(0, len(self.memory) - 1)
+        return len(self.memory) if self.memory[-1][3] else max(0, len(self.memory) - 1)
 
     def sample(self, batch_size):
         """Sample obs_batch, action_batch, reward_batch, done_batch, next_obs_batch from the replay memory."""
@@ -55,6 +55,7 @@ class ReplayMemory(_coconut.object):
             if done:
                 next_obs = np.zeros_like(obs) * np.nan
             if i in sampled_inds:
+                assert next_obs is not None, "Got None next_obs for index {_coconut_format_0}/{_coconut_format_1}".format(_coconut_format_0=(i), _coconut_format_1=(len(self)))
                 batch.append((obs, action, reward, done, next_obs))
             next_obs = obs
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0xb6aff5f7
+# __coconut_hash__ = 0x594273f9
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -67,7 +67,7 @@ def train_with(sess, env, actor, critic, noise, num_episodes, batch_size, memory
                 target_Q_values = np.asarray([r if done else r + gamma * Q for r, done, Q in zip(r_batch, done_batch, best_next_Q_batch)])
                 target_Q_batch = np.reshape(target_Q_values, (batch_size, 1))
 
-                predicted_Q_values = critic.train(sess, obs_batch, act_batch, target_Q_batch)
+                critic.train(sess, obs_batch, act_batch, target_Q_batch)
 
                 actor.train(sess, obs_batch)
 
