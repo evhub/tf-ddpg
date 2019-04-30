@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x62d939c3
+# __coconut_hash__ = 0x396d1c39
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -22,6 +22,8 @@ if _coconut_sys.version_info >= (3,):
 
 import tensorflow as tf
 
+from ddpg.constants import CRITIC_LEARNING_RATE
+from ddpg.constants import ACTOR_LEARNING_RATE
 from ddpg.util import batch_input
 from ddpg.util import get_params_defined_in
 from ddpg.util import get_target_model_updater
@@ -43,7 +45,7 @@ def get_critic_with_params(obs_input, act_input):
 class Critic(_coconut.object):
     """A DDPG critic. Keeps track of both the current critic and the target critic."""
 
-    def __init__(self, obs_dim, act_dim):
+    def __init__(self, obs_dim, act_dim, lr=CRITIC_LEARNING_RATE):
 # build critic model
         self.obs_input = batch_input(obs_dim)
         self.act_input = batch_input(act_dim)
@@ -53,7 +55,7 @@ class Critic(_coconut.object):
 
 # construct MSE loss
         self.target_Q_input = batch_input(1)
-        self.optimizer = tf.train.AdamOptimizer().minimize(tf.losses.mean_squared_error(self.target_Q_input, self.critic), var_list=self.params)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(tf.losses.mean_squared_error(self.target_Q_input, self.critic), var_list=self.params)
 
     def train(self, sess, obs_batch, act_batch, target_Q_batch):
         """Train the critic on the given observation, action, and target Q value batches."""
@@ -75,7 +77,7 @@ class Critic(_coconut.object):
 class Actor(_coconut.object):
     """A DDPG actor. Keeps track of both the current actor and the target actor."""
 
-    def __init__(self, obs_dim, act_dim, critic):
+    def __init__(self, obs_dim, act_dim, critic, lr=ACTOR_LEARNING_RATE):
 # build actor model
         self.obs_input = batch_input(obs_dim)
         self.params, self.actor = get_actor_with_params(self.obs_input, act_dim)
@@ -85,7 +87,7 @@ class Actor(_coconut.object):
 # use critic to construct loss
         self.critic_params, self.self_critic = get_critic_with_params(self.obs_input, self.actor)
         self.critic_updater = get_target_model_updater(self.critic_params, critic.params, update_weight=1)
-        self.optimizer = tf.train.AdamOptimizer().minimize(-self.self_critic, var_list=self.params)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(-self.self_critic, var_list=self.params)
 
     def train(self, sess, obs_batch):
         """Train the actor on the given batch of observations."""

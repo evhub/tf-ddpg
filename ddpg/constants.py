@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x4fda0837
+# __coconut_hash__ = 0x2bd18f3c
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -20,30 +20,32 @@ if _coconut_sys.version_info >= (3,):
 
 # Compiled Coconut: -----------------------------------------------------------
 
-from tensorflow.keras import layers
+# weight to use in soft updating target actor and critic models
+SOFT_TARGET_UPDATE_WEIGHT = 0.001
 
-from ddpg.constants import DENSE_NEURONS
-from ddpg.constants import DENSE_ACTIVATION
-from ddpg.constants import DROPOUT_RATE
-from ddpg.constants import ACTION_SCALE
-from ddpg.util import dense_with_batch_norm
+# parameters for the Ornstein-Uhlenbeck action noise
+ORNSTEIN_UHLENBECK_SIGMA = 0.3
+ORNSTEIN_UHLENBECK_THETA = 0.15
+ORNSTEIN_UHLENBECK_DT = 0.01
 
+# parameters for the network's dense layers
+DENSE_NEURONS = 128
+DENSE_ACTIVATION = "relu"
+DROPOUT_RATE = 0.1
 
-def proc_obs(obs_input):
-    """Generate a model that processes an observation."""
-    return ((layers.Dropout(DROPOUT_RATE))((dense_with_batch_norm(DENSE_NEURONS, DENSE_ACTIVATION))((layers.Dropout(DROPOUT_RATE))((dense_with_batch_norm(DENSE_NEURONS, DENSE_ACTIVATION))(obs_input)))))
+# actions are assumed to be in the range [-ACTION_SCALE, ACTION_SCALE]
+ACTION_SCALE = 2
 
+# Adam learning rates for the actor and critic
+ACTOR_LEARNING_RATE = 0.001
+CRITIC_LEARNING_RATE = 0.001
 
-def proc_obs_and_act(obs_input, act_input):
-    """Generate a model that processes an observation and an action."""
-    return ((layers.Dropout(DROPOUT_RATE))((dense_with_batch_norm(DENSE_NEURONS, DENSE_ACTIVATION))((layers.Dropout(DROPOUT_RATE))((dense_with_batch_norm(DENSE_NEURONS, DENSE_ACTIVATION))(layers.Concatenate()([act_input, proc_obs(obs_input)]))))))
+# maximum size of the replay memory
+MEMORY_SIZE = 100000
 
+# reward discount rate
+DISCOUNT_RATE = 0.99
 
-def get_actor(obs_input, act_dim, act_scale=ACTION_SCALE):
-    """Generate a DDPG actor model."""
-    return ((layers.Lambda(lambda x: x * act_scale))((layers.Dense(act_dim, activation="tanh"))((proc_obs)(obs_input))))
-
-
-def get_critic(obs_input, act_input):
-    """Generate a DDPG critic model."""
-    return ((layers.Dense(1, activation=None))(proc_obs_and_act(obs_input, act_input)))
+# default training parameters
+TRAINING_EPISODES = 100
+BATCH_SIZE = 16

@@ -1,0 +1,29 @@
+# weight to use in soft updating target actor and critic models
+SOFT_TARGET_UPDATE_WEIGHT = 0.001
+
+# parameters for the Ornstein-Uhlenbeck action noise
+ORNSTEIN_UHLENBECK_SIGMA = 0.3
+ORNSTEIN_UHLENBECK_THETA = 0.15
+ORNSTEIN_UHLENBECK_DT = 0.01
+
+# parameters for the network's dense layers
+DENSE_NEURONS = 128
+DENSE_ACTIVATION = "relu"
+DROPOUT_RATE = 0.1
+
+# actions are assumed to be in the range [-ACTION_SCALE, ACTION_SCALE]
+ACTION_SCALE = 2
+
+# Adam learning rates for the actor and critic
+ACTOR_LEARNING_RATE = 0.001
+CRITIC_LEARNING_RATE = 0.001
+
+# maximum size of the replay memory
+MEMORY_SIZE = 100000
+
+# reward discount rate
+DISCOUNT_RATE = 0.99
+
+# default training parameters
+TRAINING_EPISODES = 100
+BATCH_SIZE = 16

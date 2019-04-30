@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# __coconut_hash__ = 0x1f313196
+# __coconut_hash__ = 0x226c8f48
 
 # Compiled with Coconut version 1.4.0-post_dev30 [Ernest Scribbler]
 
@@ -26,6 +26,11 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
+from ddpg.constants import SOFT_TARGET_UPDATE_WEIGHT
+from ddpg.constants import ORNSTEIN_UHLENBECK_SIGMA
+from ddpg.constants import ORNSTEIN_UHLENBECK_THETA
+from ddpg.constants import ORNSTEIN_UHLENBECK_DT
+
 
 def dense_with_batch_norm(num_neurons, activation):
     """Behaves as layers.Dense but includes BatchNormalization."""
@@ -45,12 +50,12 @@ def get_params_defined_in(param_def_func):
     return new_params, result
 
 
-def get_target_model_updater(target_params, base_params, update_weight=0.001):
+def get_target_model_updater(target_params, base_params, update_weight=SOFT_TARGET_UPDATE_WEIGHT):
     """Gets an optimizer that can be used to soft update target_params with base_params."""
     return [target_param.assign((1 - update_weight) * target_param + update_weight * base_param) for target_param, base_param in zip(target_params, base_params)]
 
 
-def ornstein_uhlenbeck_noise(mu, sigma=0.3, theta=0.15, dt=0.01):
+def ornstein_uhlenbeck_noise(mu, sigma=ORNSTEIN_UHLENBECK_SIGMA, theta=ORNSTEIN_UHLENBECK_THETA, dt=ORNSTEIN_UHLENBECK_DT):
     """Produces an iterator that outputs Ornstein-Uhlenbeck random noise."""
     x = np.zeros_like(mu)
     while True:

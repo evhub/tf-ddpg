@@ -1,5 +1,11 @@
 from tensorflow.keras import layers
 
+from ddpg.constants import (
+    DENSE_NEURONS,
+    DENSE_ACTIVATION,
+    DROPOUT_RATE,
+    ACTION_SCALE,
+)
 from ddpg.util import dense_with_batch_norm
 
 
@@ -7,10 +13,10 @@ def proc_obs(obs_input) =
     """Generate a model that processes an observation."""
     (
         obs_input
-        |> dense_with_batch_norm(128, "relu")
-        |> layers.Dropout(0.1)
-        |> dense_with_batch_norm(128, "relu")
-        |> layers.Dropout(0.1)
+        |> dense_with_batch_norm(DENSE_NEURONS, DENSE_ACTIVATION)
+        |> layers.Dropout(DROPOUT_RATE)
+        |> dense_with_batch_norm(DENSE_NEURONS, DENSE_ACTIVATION)
+        |> layers.Dropout(DROPOUT_RATE)
     )
 
 
@@ -18,14 +24,14 @@ def proc_obs_and_act(obs_input, act_input) =
     """Generate a model that processes an observation and an action."""
     (
         layers.Concatenate()([act_input, proc_obs(obs_input)])
-        |> dense_with_batch_norm(128, "relu")
-        |> layers.Dropout(0.1)
-        |> dense_with_batch_norm(128, "relu")
-        |> layers.Dropout(0.1)
+        |> dense_with_batch_norm(DENSE_NEURONS, DENSE_ACTIVATION)
+        |> layers.Dropout(DROPOUT_RATE)
+        |> dense_with_batch_norm(DENSE_NEURONS, DENSE_ACTIVATION)
+        |> layers.Dropout(DROPOUT_RATE)
     )
 
 
-def get_actor(obs_input, act_dim, act_scale=2) =
+def get_actor(obs_input, act_dim, act_scale=ACTION_SCALE) =
     """Generate a DDPG actor model."""
     (
         obs_input
